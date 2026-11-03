@@ -1,0 +1,48 @@
+name: Build Firefox extension
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Firefox extension
+        run: npm run pack-ff
+
+      - name: Extract Firefox extension ZIP
+        run: |
+          rm -rf distribution
+          unzip -q vpn-proton-firefox.zip -d distribution
+
+      - name: Create XPI
+        run: npm run xpi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "firefox-${GITHUB_RUN_ID}" vpn-proton.me.xpi \
+            --title "Firefox extension ${GITHUB_RUN_NUMBER}" \
+            --generate-notes
