@@ -1,0 +1,45 @@
+name: Build Chrome extension
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Chrome extension
+        run: npm run pack
+
+      - name: Extract Chrome extension ZIP
+        run: |
+          rm -rf distribution
+          unzip -q vpn-proton-chrome.zip -d distribution
+
+      - name: Create CRX
+        run: npm run crx
+
+      - name: Upload Chrome artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: |
+            vpn-proton-chrome.zip
+            vpn-proton.me.crx
